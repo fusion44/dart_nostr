@@ -56,9 +56,9 @@ void main(List<String> args) async {
   // Find Jack's Metadata
   final data = await Nostr.contacts.fetchContact(
     Nip19KeySet.from(jack),
-    timeoutDuration: Duration(seconds: 15),
+    timeoutDuration: Duration(seconds: 2),
   );
-  print(data.result);
+  print(data.result?.toJson());
 
   await Nostr.dispose();
 

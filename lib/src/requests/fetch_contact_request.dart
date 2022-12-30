@@ -54,10 +54,11 @@ class FetchContactRequest extends AutoTimeoutFetchRequest<Contact?> {
     final res = await _reqInfo!.future;
 
     for (final e in res.result) {
-      if (e.kind == NostrKind.metadata) {
+      final event = e as Event;
+      if (event.kind == NostrKind.metadata) {
         _contact = Contact(
-          keyset: Nip19KeySet.from(e.pubkey),
-          profile: Profile.fromJson(jsonDecode(e.content)),
+          keyset: Nip19KeySet.from(event.pubkey),
+          profile: Profile.fromJson(jsonDecode(event.content)),
         );
 
         continue;
