@@ -4,6 +4,9 @@ import 'package:dart_nostr/dart_nostr.dart';
 import 'package:isar/isar.dart';
 import 'package:logging/logging.dart';
 
+const mnemonic =
+    'source stone proof found obey hungry senior bunker disorder brief denial flame';
+
 // Pubkey of Jack Dorsey
 const jack = 'npub1sg6plzptd64u62a878hep2kev88swjh3tw00gjsfl8f237lmu63q0uf63m';
 const odell =
@@ -34,8 +37,13 @@ void main(List<String> args) async {
   // This is only necessary for non Flutter apps
   await Isar.initializeIsarCore(download: true);
 
+  // Generate new random credentials
+  // final creds = Nostr.genRandomCredentials();
+  final creds = Nostr.genCredentialsFromMnemonic(mnemonic);
+
+  // Initialize Nostr
   await Nostr.init(
-    privKey: privKey,
+    privKey: creds.privKey,
     dbInspector: false,
     dbPath: '.',
     logLevel: Level.ALL,
@@ -47,7 +55,7 @@ void main(List<String> args) async {
 
   // Find Jack's Metadata
   final data = await Nostr.contacts.fetchContact(
-    Nip19KeySet.from(odell),
+    Nip19KeySet.from(jack),
     timeoutDuration: Duration(seconds: 15),
   );
   print(data.result);

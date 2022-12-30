@@ -6,7 +6,9 @@ environment:
   sdk: ">=2.18.6 <3.0.0"
 
 dependencies:
+  bip32: ^2.0.0
   bip340: ^0.0.4
+  bip39: ^1.0.6
   crypto: ^3.0.2
   equatable: ^2.0.5
   hex: ^0.2.0

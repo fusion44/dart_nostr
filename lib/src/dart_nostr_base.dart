@@ -1,7 +1,13 @@
+import 'package:dart_nostr/src/models/models.dart';
+import 'package:hex/hex.dart';
 import 'package:isar/isar.dart';
 import 'package:logging/logging.dart';
+import 'package:bip32/bip32.dart' as bip32;
+import 'package:bip39/bip39.dart' as bip39;
+import 'package:bip340/bip340.dart' as bip340;
 
 import 'constants.dart';
+import 'exceptions/exceptions.dart';
 import 'repositories/repositories.dart';
 import 'utils.dart';
 
@@ -56,12 +62,54 @@ class Nostr {
     _isInitialized = true;
   }
 
+  /// dispose of all resources. This will release all
+  /// open databases and close all open streams
   static Future<void> dispose() async {
     await _relayRepo?.dispose();
     await _contactsRepo?.dispose();
     await Isar.getInstance(_dbName)?.close();
 
     log('dart_nostr successfully disposed');
+  }
+
+  /// generate a random set of credentials
+  static Credentials genRandomCredentials() {
+    final mnemonic = genMnemonic();
+
+    return genCredentialsFromMnemonic(mnemonic);
+  }
+
+  /// generate a new mnemonic
+  static String genMnemonic() => bip39.generateMnemonic();
+
+  /// generate credentials from a given private key
+  static Credentials genCredentialsFromPrivKey(String privKey) {
+    final pubKey = bip340.getPublicKey(privKey);
+
+    return Credentials(
+      pubKey: Nip19KeySet.from(pubKey),
+      privKey: privKey,
+    );
+  }
+
+  /// Generate credentials from a given mnemonic
+  ///
+  /// throws [InvalidMnemonicError] if the given mnemonic is invalid
+  static Credentials genCredentialsFromMnemonic(String mnemonic) {
+    if (!bip39.validateMnemonic(mnemonic)) {
+      throw InvalidMnemonicError();
+    }
+
+    final seed = bip39.mnemonicToSeed(mnemonic);
+    final root = bip32.BIP32.fromSeed(seed);
+    final privKey = HEX.encode(root.privateKey!.toList());
+    final pubKey = bip340.getPublicKey(privKey);
+
+    return Credentials(
+      mnemonic: mnemonic,
+      pubKey: Nip19KeySet.from(pubKey),
+      privKey: privKey,
+    );
   }
 }
 
