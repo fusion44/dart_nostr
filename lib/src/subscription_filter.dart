@@ -42,8 +42,10 @@ class SubscriptionFilter {
       if (eventKinds.isNotEmpty) 'kinds': eventKinds.toIntList(),
       if (eTagIds.isNotEmpty) '#e': eTagIds,
       if (pTagIds.isNotEmpty) '#p': pTagIds,
-      if (since != null) 'since': since!.millisecondsSinceEpoch / 1000,
-      if (until != null) 'until': until!.millisecondsSinceEpoch / 1000,
+      if (since != null)
+        'since': (since!.millisecondsSinceEpoch / 1000).floor(),
+      if (until != null)
+        'until': (until!.millisecondsSinceEpoch / 1000).floor(),
       if (authors.isNotEmpty) 'authors': authors,
       if (limit != null) 'limit': limit,
     };

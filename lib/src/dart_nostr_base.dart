@@ -1,4 +1,5 @@
 import 'package:dart_nostr/src/models/models.dart';
+import 'package:dart_nostr/src/subscription_filter.dart';
 import 'package:hex/hex.dart';
 import 'package:isar/isar.dart';
 import 'package:logging/logging.dart';
@@ -110,6 +111,13 @@ class Nostr {
       pubKey: Nip19KeySet.from(pubKey),
       privKey: privKey,
     );
+  }
+
+  /// Generate a query string from a given [SubscriptionFilter]
+  /// If [prettyPrint] is set to true the json string will be formatted
+  static String genQueryString(SubscriptionFilter f,
+      {bool prettyPrint = false}) {
+    return jsonify(['REQ', defaultIdToken, f.toJson()], prettyPrint);
   }
 }
 

@@ -10,9 +10,19 @@ import '../models/models.dart';
 import '../requests/request_result.dart';
 import '../utils.dart';
 
-class RequestInfo {
+class EOSEEvent {
   final String id;
-  final Future future;
+  final Relay relay;
+
+  EOSEEvent(this.id, this.relay);
+
+  @override
+  String toString() => 'EOSEEvent{id: $id, relay: ${relay.url}}';
+}
+
+class RequestInfo<T> {
+  final String id;
+  final Future<RequestResult<T>> future;
 
   RequestInfo(this.id, this.future);
 }
@@ -21,11 +31,11 @@ class _ActiveRequestGroup {
   final String id;
   final Map<Relay, bool> _relays = {};
   final Map<String, Event> _events = {};
-  final bool _partialUpdates;
-  final Completer<RequestResult> _completer = Completer();
+  final bool _realtimeUpdates;
+  final Completer<RequestResult<List<Event>>> _completer = Completer();
   final String query;
 
-  _ActiveRequestGroup(this.id, this.query, [this._partialUpdates = false]);
+  _ActiveRequestGroup(this.id, this.query, [this._realtimeUpdates = false]);
 
   void addRelay(Relay r) => _relays[r] = false;
 
@@ -45,9 +55,10 @@ class _ActiveRequestGroup {
 
   void forceComplete(String? reason) => _complete(true, reason);
 
+  /// returns true if all relays responded with EOSE
   bool get isDone => _relays.values.every((e) => e);
 
-  bool get partialUpdates => _partialUpdates;
+  bool get realtimeUpdates => _realtimeUpdates;
 
   Future<RequestResult> get future => _completer.future;
 
@@ -89,8 +100,8 @@ class RelayRepository {
   late final Stream<String> _noticeStream;
   final List<String> _notices = [];
 
-  final _eoseStreamController = StreamController<String>();
-  late final Stream<String> _eoseStream;
+  final _eoseStreamController = StreamController<EOSEEvent>();
+  late final Stream<EOSEEvent> _eoseStream;
 
   late final Isar _isar;
 
@@ -111,7 +122,7 @@ class RelayRepository {
   Stream<String> get noticeSub => _noticeStream;
 
   // Subscribe to EOSE events
-  Stream<String> get eoseSub => _eoseStream;
+  Stream<EOSEEvent> get eoseSub => _eoseStream;
 
   List<Event> get events => _eventMap.values.toList();
 
@@ -208,10 +219,10 @@ class RelayRepository {
     await _storeRelays();
   }
 
-  RequestInfo query(String query, [bool partialUpdates = false]) {
+  RequestInfo<List<Event>> query(String query, {bool realtimeUpdates = false}) {
     final id = _genId();
     final q = query.replaceFirst(defaultIdToken, id);
-    final grp = _ActiveRequestGroup(id, q, partialUpdates);
+    final grp = _ActiveRequestGroup(id, q, realtimeUpdates);
     _activeRequests[id] = grp;
 
     for (var r in _channels.keys) {
@@ -221,10 +232,11 @@ class RelayRepository {
       chan.sink.add(q);
     }
 
-    return RequestInfo(id, grp._completer.future);
+    return RequestInfo<List<Event>>(id, grp._completer.future);
   }
 
   void forceCompleteRequest(String reqId, [String? reason]) {
+    log('force completing request $reqId', level: Level.FINEST);
     if (_activeRequests.containsKey(reqId)) {
       final grp = _activeRequests.remove(reqId);
 
@@ -308,10 +320,8 @@ class RelayRepository {
 
         req.setEose(r);
 
-        if (req.isDone) {
-          _eoseStreamController.sink.add(id);
-          _eventStreamController.sink.add([...req._events.values.toList()]);
-          forceCompleteRequest(id);
+        if (req.realtimeUpdates) {
+          _eoseStreamController.sink.add(EOSEEvent(id, r));
         }
 
         return;
@@ -347,7 +357,7 @@ class RelayRepository {
 
           final evt2 = evt.copyWith(verified: verified);
 
-          if (req.partialUpdates) {
+          if (req.realtimeUpdates) {
             _addEventToCache(evt2);
           }
 
