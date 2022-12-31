@@ -1,12 +1,12 @@
-import 'package:dart_nostr/src/models/models.dart';
-import 'package:dart_nostr/src/subscription_filter.dart';
+import 'package:bip32/bip32.dart' as bip32;
+import 'package:bip340/bip340.dart' as bip340;
+import 'package:bip39/bip39.dart' as bip39;
 import 'package:hex/hex.dart';
 import 'package:isar/isar.dart';
 import 'package:logging/logging.dart';
-import 'package:bip32/bip32.dart' as bip32;
-import 'package:bip39/bip39.dart' as bip39;
-import 'package:bip340/bip340.dart' as bip340;
 
+import 'models/models.dart';
+import 'subscription_filter.dart';
 import 'constants.dart';
 import 'exceptions/exceptions.dart';
 import 'repositories/repositories.dart';

@@ -1,5 +1,6 @@
-import 'package:dart_nostr/dart_nostr.dart';
 import 'package:test/test.dart';
+
+import 'package:dart_nostr/dart_nostr.dart';
 
 final pubKeyHex =
     '4d6a9aeb5279a45ae3b972f1c7c08acb82e10b30a397d738c5cf84251df92902';

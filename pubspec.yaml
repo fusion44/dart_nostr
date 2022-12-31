@@ -13,6 +13,7 @@ dependencies:
   equatable: ^2.0.5
   hex: ^0.2.0
   http: ^0.13.5
+  import_sorter: ^4.6.0
   isar: ^3.0.5
   logging: ^1.1.0
   web_socket_channel: ^2.2.0
@@ -20,5 +21,14 @@ dependencies:
 dev_dependencies:
   lints: ^2.0.0
   test: ^1.16.0
+  import_path_converter: ^1.0.1
   isar_generator: ^3.0.5
   build_runner: ^2.3.3
+
+import_sorter:
+  comments: false
+
+import_path_converter:
+  relative: true
+  ignored_files:
+    - \/test\/*

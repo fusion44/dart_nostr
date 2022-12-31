@@ -1,7 +1,7 @@
-import 'package:dart_nostr/src/models/models.dart';
 import 'package:equatable/equatable.dart';
 import 'package:isar/isar.dart';
 
+import 'models.dart';
 import '../utils.dart';
 
 part 'contact.g.dart';

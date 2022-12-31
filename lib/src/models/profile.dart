@@ -1,6 +1,7 @@
-import 'package:dart_nostr/src/models/nip05_verification_result.dart';
 import 'package:equatable/equatable.dart';
 import 'package:isar/isar.dart';
+
+import 'nip05_verification_result.dart';
 
 part 'profile.g.dart';
 

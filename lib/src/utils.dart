@@ -2,9 +2,10 @@ import 'dart:convert';
 import 'dart:math';
 import 'dart:typed_data';
 
-import 'package:dart_nostr/src/constants.dart';
 import 'package:isar/isar.dart';
 import 'package:logging/logging.dart';
+
+import 'constants.dart';
 
 Uint8List randomBytes32() {
   final rand = Random.secure();

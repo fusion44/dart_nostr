@@ -2,7 +2,6 @@ import 'dart:async';
 
 import '../constants.dart';
 import '../models/models.dart';
-
 import '../repositories/relay_repository.dart';
 import '../subscription_filter.dart';
 import '../utils.dart';
