@@ -227,6 +227,12 @@ class RelayRepository {
     await _storeRelays();
   }
 
+  /// Query [Event] from Relays. Returns a [RequestInfo] object which contains
+  /// the request id and a [Future] which will complete when the request is
+  /// finished. The [Future] will contain a [List] of [Event] objects upon completion.
+  ///
+  /// If [realtimeUpdates] is set to true, the [Future] will complete without
+  /// any events but the Events will be streamed to the [eventsSub] stream.
   RequestInfo<List<Event>> query(String query, {bool realtimeUpdates = false}) {
     final id = _genId();
     final q = query.replaceFirst(defaultIdToken, id);
@@ -241,6 +247,29 @@ class RelayRepository {
     }
 
     return RequestInfo<List<Event>>(id, grp._completer.future);
+  }
+
+  /// Query [Event] from the DB. Returns the [DateTime] of the last event or null
+  /// if no matching events are present in the DB. If [pubkey] is set, only events
+  /// for that contact will be considered.
+  Future<DateTime?> dbGetLastEventTime([Nip19KeySet? pubkey]) async {
+    final isar = getIsar();
+
+    Event? e;
+    if (pubkey != null) {
+      e = await isar.events
+          .filter()
+          .pubkeyEqualTo(pubkey.pubKeyHex)
+          .sortByCreatedAtDtDesc()
+          .findFirst();
+
+      return e?.createdAtDt;
+    }
+
+    e = await isar.events.where().sortByCreatedAtDtDesc().findFirst();
+    if (e == null) return null;
+
+    return e.createdAtDt;
   }
 
   void forceCompleteRequest(String reqId, [String? reason]) {
