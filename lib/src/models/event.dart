@@ -4,29 +4,34 @@ import 'package:bip340/bip340.dart' as bip340;
 import 'package:crypto/crypto.dart';
 import 'package:equatable/equatable.dart';
 import 'package:hex/hex.dart';
+import 'package:isar/isar.dart';
 
 import '../utils.dart';
 import 'models.dart';
 
+part 'event.g.dart';
+
+@Collection(ignore: {'props'})
 class Event extends Equatable {
+  late final Id id = fastHash(nostrId);
   final String channel;
-  final String id;
+  final String nostrId;
   final String pubkey;
   final DateTime createdAtDt;
   final int kind;
-  final List<Tag> tags;
   final String content;
   final String sig;
   final bool verified;
-  final List<Relay> relays;
-  final List<Event> _parents = [];
-  final List<Event> _children = [];
+  final List<Tag> tags = [];
+  final List<String> relays = [];
+  final _parents = IsarLinks<Event>();
+  final _children = IsarLinks<Event>();
 
   int get numParents => _parents.length;
   int get numChildren => _children.length;
 
-  List<Event> get parents => _parents;
-  List<Event> get children => _children;
+  IsarLinks<Event> get parents => _parents;
+  IsarLinks<Event> get children => _children;
 
   int get createdAt => DateTime.now().millisecondsSinceEpoch ~/ 1000;
 
@@ -35,9 +40,7 @@ class Event extends Equatable {
     required this.createdAtDt,
     required this.kind,
     this.channel = '0',
-    this.relays = const [],
-    this.id = '',
-    this.tags = const [],
+    this.nostrId = '',
     this.content = '',
     this.sig = '',
     this.verified = false,
@@ -50,12 +53,10 @@ class Event extends Equatable {
 
   Event.empty()
       : channel = '0',
-        relays = const [],
-        id = '',
+        nostrId = '',
         pubkey = '',
         createdAtDt = DateTime.now(),
         kind = NostrKind.empty,
-        tags = const [],
         content = '',
         sig = '',
         verified = false;
@@ -64,37 +65,35 @@ class Event extends Equatable {
     required String pubKey,
     required String privKey,
     required String content,
-    List<EventTag> tags = const [],
+    List<Tag> tags = const [],
     DateTime? createdAt,
   }) async {
     final e = Event(
       pubkey: pubKey,
-      tags: tags,
       createdAtDt: createdAt ?? DateTime.now(),
       kind: NostrKind.note,
       content: content,
-    );
+    )..tags.addAll(tags);
 
     return await e.signWith(privKey);
   }
 
   /// Event to publish a the a contact list to relays
   /// https://github.com/fiatjaf/nostr/blob/master/nips/02.md
-  Event.publishContacts(String pubKey, this.tags)
+  Event.publishContacts(String pubKey)
       : pubkey = pubKey,
         createdAtDt = DateTime.now(),
-        id = '',
+        nostrId = '',
         kind = NostrKind.contacts,
         content = '',
         channel = '0',
-        relays = const [],
         sig = '',
         verified = false;
 
   @override
   List<Object> get props => [
         channel,
-        id,
+        nostrId,
         relays,
         pubkey,
         createdAt,
@@ -108,32 +107,33 @@ class Event extends Equatable {
 
   static Event fromJson(
     Map<String, dynamic> json, {
-    List<Relay> relay = const [],
+    List<Relay> relays = const [],
     String channel = '0',
   }) {
-    final tags = <Tag>[];
+    final e = Event(
+      channel: channel,
+      nostrId: json['id'],
+      pubkey: json['pubkey'],
+      createdAtDt:
+          DateTime.fromMillisecondsSinceEpoch(json['created_at'] * 1000),
+      kind: json['kind'] ?? NostrKind.empty,
+      content: json['content'],
+      sig: json['sig'],
+    );
+
+    e.relays.addAll(relays.map((e) => e.url));
     if (json['tags'] != null && json['tags'].isNotEmpty) {
       json['tags'].forEach((v) {
-        tags.add(Tag.fromJson(v));
+        e.tags.add(Tag.fromJson(v));
       });
     }
 
-    return Event(
-        channel: channel,
-        relays: relay,
-        id: json['id'],
-        pubkey: json['pubkey'],
-        createdAtDt:
-            DateTime.fromMillisecondsSinceEpoch(json['created_at'] * 1000),
-        kind: json['kind'] ?? NostrKind.empty,
-        tags: tags,
-        content: json['content'],
-        sig: json['sig']);
+    return e;
   }
 
   bool hasChild(Event a) {
     for (var b in _children) {
-      if (a.id == b.id) return true;
+      if (a.nostrId == b.nostrId) return true;
     }
 
     return false;
@@ -141,7 +141,7 @@ class Event extends Equatable {
 
   bool hasParent(Event a) {
     for (var b in _children) {
-      if (a.id == b.id) return true;
+      if (a.nostrId == b.nostrId) return true;
     }
 
     return false;
@@ -149,8 +149,8 @@ class Event extends Equatable {
 
   Event copyWith({
     String? channel,
-    List<Relay>? relays,
-    String? id,
+    List<String>? relays,
+    String? nostrId,
     String? pubkey,
     int? createdAt,
     int? kind,
@@ -163,25 +163,25 @@ class Event extends Equatable {
   }) {
     return Event(
       channel: channel ?? this.channel,
-      relays: relays ?? this.relays,
-      id: id ?? this.id,
+      nostrId: nostrId ?? this.nostrId,
       pubkey: pubkey ?? this.pubkey,
       createdAtDt: createdAt != null
           ? DateTime.fromMillisecondsSinceEpoch(createdAt * 1000)
           : createdAtDt,
       kind: kind ?? this.kind,
-      tags: tags ?? this.tags,
       content: content ?? this.content,
       sig: sig ?? this.sig,
       verified: verified ?? this.verified,
       parents: parent != null ? [...parents, parent] : [...parents],
       children: child != null ? [...children, child] : [...children],
-    );
+    )
+      ..relays.addAll(relays ?? this.relays)
+      ..tags.addAll(tags ?? this.tags);
   }
 
   Map<String, dynamic> toMap() {
     final data = <String, dynamic>{};
-    data['id'] = id;
+    data['id'] = nostrId;
     data['pubkey'] = pubkey;
     data['created_at'] = createdAt;
     data['kind'] = kind;
@@ -201,7 +201,7 @@ class Event extends Equatable {
     final eventHash = _hashHEX();
     final sig = bip340.sign(key, eventHash, HEX.encode(randomBytes32()));
 
-    return copyWith(id: eventHash, sig: sig, verified: await verify());
+    return copyWith(nostrId: eventHash, sig: sig, verified: await verify());
   }
 
   Future<bool> verify() async {
@@ -216,7 +216,7 @@ class Event extends Equatable {
       pubkey,
       createdAt,
       kind,
-      tags,
+      tags.toList(),
       content,
     ]); //.replaceAll(RegExp(r'\s+'), '');
 

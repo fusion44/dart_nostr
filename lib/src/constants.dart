@@ -6,6 +6,7 @@ const defaultDatabaseName = 'nostr.db';
 
 const defaultSchemas = [
   ContactSchema,
+  EventSchema,
   Nip05Schema,
   Nip19KeySetSchema,
   ProfileSchema,

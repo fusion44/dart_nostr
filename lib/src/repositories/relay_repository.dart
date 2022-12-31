@@ -45,12 +45,15 @@ class _ActiveRequestGroup {
   }
 
   void addEvent(Relay r, Event e) {
-    if (_events.containsKey(e.id)) {
-      _events[e.id]!.relays.add(r);
+    if (_realtimeUpdates) return;
+
+    if (_events.containsKey(e.nostrId) &&
+        !_events[e.nostrId]!.relays.contains(r.url)) {
+      _events[e.nostrId]!.relays.add(r.url);
       return;
     }
 
-    _events[e.id] = e.copyWith(relays: [r]);
+    _events[e.nostrId] = e.copyWith(relays: [r.url]);
   }
 
   void forceComplete(String? reason) => _complete(true, reason);
@@ -62,7 +65,7 @@ class _ActiveRequestGroup {
 
   Future<RequestResult> get future => _completer.future;
 
-  void _complete([bool forced = false, String? forceReason]) {
+  Future<void> _complete([bool forced = false, String? forceReason]) async {
     if (_completer.isCompleted) {
       log(
         'Trying to complete an already completed completer (forced: $forced, reason: $forceReason)',
@@ -71,6 +74,11 @@ class _ActiveRequestGroup {
 
       return;
     }
+
+    final isar = getIsar();
+    await isar.writeTxn(() async {
+      await isar.events.putAll(_events.values.toList());
+    });
 
     _completer.complete(
       RequestResult(
@@ -361,7 +369,7 @@ class RelayRepository {
             _addEventToCache(evt2);
           }
 
-          _eventMap[evt.id] = evt2;
+          _eventMap[evt.nostrId] = evt2;
           req.addEvent(r, evt2);
         }
       }

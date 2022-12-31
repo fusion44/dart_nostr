@@ -57,8 +57,20 @@ void main(List<String> args) async {
   // await lowLevelExample();
   await highLevelExample();
 
+  await _stop();
+
   await Nostr.dispose();
   exit(0);
+}
+
+Future<void> _stop() async {
+  Completer completer = Completer();
+  ProcessSignal.sigint.watch().listen((signal) {
+    print('Received SIGINT. Exiting...');
+    completer.complete();
+  });
+
+  return completer.future;
 }
 
 Future<void> highLevelExample() async {
@@ -166,6 +178,10 @@ Future<void> lowLevelExample() async {
     print('$i ========================');
     print(e.content);
     print('${e.createdAtDt.toIso8601String()} by @ODELL');
+    print('Tags:');
+    for (var tag in e.tags) {
+      print('  $tag');
+    }
   }
 
   print('========================');
