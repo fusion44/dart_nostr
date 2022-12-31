@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'package:http/http.dart' as http;
 
 import '../constants.dart';
 import '../models/models.dart';
@@ -12,8 +13,6 @@ import 'request_result.dart';
 class FetchContactRequest extends AutoTimeoutFetchRequest<Contact?> {
   final Nip19KeySet key;
   final bool useCache;
-
-  Contact? _contact;
 
   RequestInfo? _reqInfo;
 
@@ -53,23 +52,60 @@ class FetchContactRequest extends AutoTimeoutFetchRequest<Contact?> {
     _reqInfo = repo.query(evtString);
     final res = await _reqInfo!.future;
 
+    Contact? contact;
+
     for (final e in res.result) {
       final event = e as Event;
       if (event.kind == NostrKind.metadata) {
-        _contact = Contact(
+        final json = jsonDecode(event.content);
+        Nip05 nip05 = Nip05.unverified();
+        if (json.containsKey('nip05')) {
+          nip05 = await _handleNip05(event.pubkey, json['nip05']);
+        }
+
+        contact = Contact(
           keyset: Nip19KeySet.from(event.pubkey),
-          profile: Profile.fromJson(jsonDecode(event.content)),
+          profile: Profile.fromJson(json, nip05),
         );
+
+        if (nip05.verified) {
+          // If we have a verified nip05, we can stop here
+          break;
+        }
 
         continue;
       }
     }
 
     return RequestResult(
-      _contact,
+      contact,
       forced: res.forced,
       forceReason: res.forceReason,
       relays: res.relays,
     );
+  }
+
+  Future<Nip05> _handleNip05(String pubkey, String nip05String) async {
+    // https: //example.com/.well-known/nostr.json?name=bob
+    final spl = nip05String.split('@');
+    if (spl.length != 2) return Nip05.empty();
+    final name = spl[0];
+    final domain = spl[1];
+
+    final uri = Uri.tryParse(
+      'https://$domain/.well-known/nostr.json?name=$name',
+    );
+    if (uri == null) return Nip05.empty();
+
+    final res = await http.read(uri);
+    final nip05Res = jsonDecode(res);
+    if (!nip05Res.containsKey('names')) return Nip05.unverified(domain);
+
+    if (!nip05Res['names'].containsKey(name)) return Nip05.unverified(domain);
+
+    final verifyKey = nip05Res['names'][name];
+    if (verifyKey != pubkey) return Nip05.unverified(domain);
+
+    return Nip05.verified(domain);
   }
 }

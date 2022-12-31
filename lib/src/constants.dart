@@ -4,6 +4,12 @@ const defaultLoggerName = 'dn';
 
 const defaultDatabaseName = 'nostr.db';
 
-const defaultSchemas = [Nip19KeySetSchema, ContactSchema, RelaySchema];
+const defaultSchemas = [
+  ContactSchema,
+  Nip05Schema,
+  Nip19KeySetSchema,
+  ProfileSchema,
+  RelaySchema,
+];
 
 const defaultIdToken = '{{ID}}';

@@ -60,7 +60,7 @@ class FetchContactNotesRequest
     );
 
     final evtString = jsonify(['REQ', defaultIdToken, f.toJson()]);
-    _reqInfo = repo.query(evtString, false);
+    _reqInfo = repo.query(evtString, realtimeUpdates: false);
     final res = await _reqInfo!.future;
 
     return RequestResult(

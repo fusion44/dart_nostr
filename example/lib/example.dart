@@ -54,7 +54,7 @@ void main(List<String> args) async {
     await Nostr.relays.addRelay(relay);
   }
 
-  await lowLevelExample();
+  // await lowLevelExample();
   await highLevelExample();
 
   await Nostr.dispose();
@@ -67,7 +67,22 @@ Future<void> highLevelExample() async {
     Nip19KeySet.from(jack),
     timeoutDuration: Duration(seconds: 2),
   );
-  print(data.result?.toJson());
+
+  final res = data.result;
+  if (res == null) {
+    print('No data found');
+    return;
+  }
+
+  print('Found ${res.profile.value!.name} (${res.pubkeyHex})');
+  print('====================================================================');
+  print('About:           ${res.profile.value!.about}');
+  print('Picture:         ${res.profile.value!.picture}');
+  print('Nip05 verified:  ${res.profile.value!.nip05.value!.verified}');
+  print('Nip05 Domain:    ${res.profile.value!.nip05.value!.domain}');
+  print('====================================================================');
+
+  print(res.toJson());
 }
 
 RequestInfo? _reqInfo;

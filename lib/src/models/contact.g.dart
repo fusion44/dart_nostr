@@ -27,19 +27,13 @@ const ContactSchema = CollectionSchema(
       name: r'hashCode',
       type: IsarType.long,
     ),
-    r'profile': PropertySchema(
-      id: 2,
-      name: r'profile',
-      type: IsarType.object,
-      target: r'Profile',
-    ),
     r'pubkeyHex': PropertySchema(
-      id: 3,
+      id: 2,
       name: r'pubkeyHex',
       type: IsarType.string,
     ),
     r'stringify': PropertySchema(
-      id: 4,
+      id: 3,
       name: r'stringify',
       type: IsarType.bool,
     )
@@ -56,9 +50,15 @@ const ContactSchema = CollectionSchema(
       name: r'keySet',
       target: r'Nip19KeySet',
       single: true,
+    ),
+    r'profile': LinkSchema(
+      id: -4436212126980086682,
+      name: r'profile',
+      target: r'Profile',
+      single: true,
     )
   },
-  embeddedSchemas: {r'Profile': ProfileSchema},
+  embeddedSchemas: {},
   getId: _contactGetId,
   getLinks: _contactGetLinks,
   attach: _contactAttach,
@@ -71,9 +71,6 @@ int _contactEstimateSize(
   Map<Type, List<int>> allOffsets,
 ) {
   var bytesCount = offsets.last;
-  bytesCount += 3 +
-      ProfileSchema.estimateSize(
-          object.profile, allOffsets[Profile]!, allOffsets);
   bytesCount += 3 + object.pubkeyHex.length * 3;
   return bytesCount;
 }
@@ -86,14 +83,8 @@ void _contactSerialize(
 ) {
   writer.writeBool(offsets[0], object.following);
   writer.writeLong(offsets[1], object.hashCode);
-  writer.writeObject<Profile>(
-    offsets[2],
-    allOffsets,
-    ProfileSchema.serialize,
-    object.profile,
-  );
-  writer.writeString(offsets[3], object.pubkeyHex);
-  writer.writeBool(offsets[4], object.stringify);
+  writer.writeString(offsets[2], object.pubkeyHex);
+  writer.writeBool(offsets[3], object.stringify);
 }
 
 Contact _contactDeserialize(
@@ -104,12 +95,6 @@ Contact _contactDeserialize(
 ) {
   final object = Contact(
     following: reader.readBoolOrNull(offsets[0]) ?? false,
-    profile: reader.readObjectOrNull<Profile>(
-          offsets[2],
-          ProfileSchema.deserialize,
-          allOffsets,
-        ) ??
-        Profile(),
   );
   return object;
 }
@@ -126,15 +111,8 @@ P _contactDeserializeProp<P>(
     case 1:
       return (reader.readLong(offset)) as P;
     case 2:
-      return (reader.readObjectOrNull<Profile>(
-            offset,
-            ProfileSchema.deserialize,
-            allOffsets,
-          ) ??
-          Profile()) as P;
-    case 3:
       return (reader.readString(offset)) as P;
-    case 4:
+    case 3:
       return (reader.readBoolOrNull(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -146,11 +124,12 @@ Id _contactGetId(Contact object) {
 }
 
 List<IsarLinkBase<dynamic>> _contactGetLinks(Contact object) {
-  return [object.keySet];
+  return [object.keySet, object.profile];
 }
 
 void _contactAttach(IsarCollection<dynamic> col, Id id, Contact object) {
   object.keySet.attach(col, col.isar.collection<Nip19KeySet>(), r'keySet', id);
+  object.profile.attach(col, col.isar.collection<Profile>(), r'profile', id);
 }
 
 extension ContactQueryWhereSort on QueryBuilder<Contact, Contact, QWhere> {
@@ -503,14 +482,7 @@ extension ContactQueryFilter
 }
 
 extension ContactQueryObject
-    on QueryBuilder<Contact, Contact, QFilterCondition> {
-  QueryBuilder<Contact, Contact, QAfterFilterCondition> profile(
-      FilterQuery<Profile> q) {
-    return QueryBuilder.apply(this, (query) {
-      return query.object(q, r'profile');
-    });
-  }
-}
+    on QueryBuilder<Contact, Contact, QFilterCondition> {}
 
 extension ContactQueryLinks
     on QueryBuilder<Contact, Contact, QFilterCondition> {
@@ -524,6 +496,19 @@ extension ContactQueryLinks
   QueryBuilder<Contact, Contact, QAfterFilterCondition> keySetIsNull() {
     return QueryBuilder.apply(this, (query) {
       return query.linkLength(r'keySet', 0, true, 0, true);
+    });
+  }
+
+  QueryBuilder<Contact, Contact, QAfterFilterCondition> profile(
+      FilterQuery<Profile> q) {
+    return QueryBuilder.apply(this, (query) {
+      return query.link(q, r'profile');
+    });
+  }
+
+  QueryBuilder<Contact, Contact, QAfterFilterCondition> profileIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.linkLength(r'profile', 0, true, 0, true);
     });
   }
 }
@@ -686,12 +671,6 @@ extension ContactQueryProperty
   QueryBuilder<Contact, int, QQueryOperations> hashCodeProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'hashCode');
-    });
-  }
-
-  QueryBuilder<Contact, Profile, QQueryOperations> profileProperty() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addPropertyName(r'profile');
     });
   }
 

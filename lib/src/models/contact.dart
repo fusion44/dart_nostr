@@ -10,38 +10,37 @@ part 'contact.g.dart';
 class Contact extends Equatable {
   late final Id id = fastHash(keySet.value!.pubKeyHex);
   final keySet = IsarLink<Nip19KeySet>();
-  final Profile profile;
+  final profile = IsarLink<Profile>();
   final bool following;
 
   Contact({
-    required this.profile,
     this.following = false,
     Nip19KeySet? keyset,
+    Profile? profile,
   }) {
     if (keyset != null) keySet.value = keyset;
+    if (profile != null) this.profile.value = profile;
   }
 
   String get pubkeyHex => keySet.value!.pubKeyHex;
 
   @override
-  List<Object> get props => [...profile.props, following];
+  List<Object> get props => [...profile.value!.props, following];
 
-  Contact copyWith({Profile? profile, bool? following}) {
+  Contact copyWith({bool? following}) {
     return Contact(
-      profile: profile ?? this.profile,
       following: following ?? this.following,
       keyset: keySet.value,
+      profile: profile.value,
     );
   }
 
-  Contact.empty([Nip19KeySet? keyset])
-      : profile = Profile(),
-        following = false;
+  Contact.empty([Nip19KeySet? keyset]) : following = false;
 
   Map<String, dynamic> toJson() {
     return {
       'pubkey': keySet.value ?? keySet.value?.toJson(),
-      'profile': profile.toJson(),
+      'profile': profile.value!.toJson(),
       'following': following,
     };
   }

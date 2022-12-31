@@ -1,8 +1,6 @@
 import 'dart:async';
-import 'dart:convert';
 
 import 'package:isar/isar.dart';
-import 'package:logging/logging.dart';
 
 import '../models/models.dart';
 import '../requests/fetch_contact_request.dart';
@@ -15,7 +13,6 @@ class ContactsRepository {
   final _contactsStreamController = StreamController<Contact>();
   late final Stream<Contact> _contactsStream;
   final Map<String, Contact> _contacts = {};
-  late final StreamSubscription<List<Event>> _sub;
   bool _initialized = false;
 
   late final Isar _isar;
@@ -35,28 +32,10 @@ class ContactsRepository {
     _initialized = true;
   }
 
-  Future<void> dispose() async {
-    await _sub.cancel();
-  }
+  Future<void> dispose() async {}
 
   ContactsRepository(this._relayRepo) {
     _contactsStream = _contactsStreamController.stream.asBroadcastStream();
-    final l = _relayRepo.events.where(
-      (element) => element.kind == NostrKind.metadata,
-    );
-    _handleProfileEvents(l);
-
-    _sub = _relayRepo.eventsSub.map<List<Event>>((events) {
-      final newList = <Event>[];
-      for (var e in events) {
-        if (e.kind == NostrKind.metadata && e.channel == '0') {
-          newList.add(e);
-        }
-      }
-      return newList;
-    }).listen((events) {
-      _handleProfileEvents(events);
-    }, onError: (e) => log(e, level: Level.SEVERE));
   }
 
   /// Get all contacts received up to this point in time
@@ -109,19 +88,5 @@ class ContactsRepository {
     _contactsStreamController.sink.add(newContact);
 
     return newContact;
-  }
-
-  void _handleProfileEvents(Iterable<Event> events) {
-    for (var e in events) {
-      final p = Profile.fromJson(jsonDecode(e.content));
-      Contact c;
-      if (_contacts.containsKey(e.pubkey)) {
-        c = _contacts[e.pubkey]!.copyWith(profile: p);
-      } else {
-        c = Contact(keyset: Nip19KeySet.from(e.pubkey), profile: p);
-      }
-      _contacts[e.pubkey] = c;
-      _contactsStreamController.sink.add(c);
-    }
   }
 }
