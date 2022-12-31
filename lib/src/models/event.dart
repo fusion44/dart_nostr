@@ -13,7 +13,7 @@ class Event extends Equatable {
   final String id;
   final String pubkey;
   final DateTime createdAtDt;
-  final NostrKind kind;
+  final int kind;
   final List<Tag> tags;
   final String content;
   final String sig;
@@ -54,7 +54,7 @@ class Event extends Equatable {
         id = '',
         pubkey = '',
         createdAtDt = DateTime.now(),
-        kind = NostrKind.unknown,
+        kind = NostrKind.empty,
         tags = const [],
         content = '',
         sig = '',
@@ -125,7 +125,7 @@ class Event extends Equatable {
         pubkey: json['pubkey'],
         createdAtDt:
             DateTime.fromMillisecondsSinceEpoch(json['created_at'] * 1000),
-        kind: NostrKind.fromValue(json['kind'] ?? -1),
+        kind: json['kind'] ?? NostrKind.empty,
         tags: tags,
         content: json['content'],
         sig: json['sig']);
@@ -153,7 +153,7 @@ class Event extends Equatable {
     String? id,
     String? pubkey,
     int? createdAt,
-    NostrKind? kind,
+    int? kind,
     List<Tag>? tags,
     String? content,
     String? sig,
@@ -184,7 +184,7 @@ class Event extends Equatable {
     data['id'] = id;
     data['pubkey'] = pubkey;
     data['created_at'] = createdAt;
-    data['kind'] = kind.value;
+    data['kind'] = kind;
     data['tags'] = tags.map((v) => v.toJson()).toList();
     data['content'] = content;
     data['sig'] = sig;
@@ -215,7 +215,7 @@ class Event extends Equatable {
       0,
       pubkey,
       createdAt,
-      kind.value,
+      kind,
       tags,
       content,
     ]); //.replaceAll(RegExp(r'\s+'), '');

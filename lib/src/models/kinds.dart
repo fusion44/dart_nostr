@@ -1,61 +1,19 @@
-// https://github.com/nostr-protocol/nips#event-kinds
-
-import '../utils.dart';
-
-enum NostrKind {
-  unknown(-1),
-  metadata(0),
-  note(1),
-  recommendRelay(2),
-  contacts(3),
-  encryptedDirectMessages(4),
-  eventDeletion(5),
-  reaction(7),
-  channelCreation(40),
-  channelMetadata(41),
-  channelMessage(42),
-  channelHideMessage(43),
-  channelMuteUser(44);
+// https://github.com/nostr-protocol/nips#event-kinds1
+class NostrKind {
+  static const int empty = -1;
+  static const int metadata = 0;
+  static const int note = 1;
+  static const int recommendRelay = 2;
+  static const int contacts = 3;
+  static const int encryptedDirectMessages = 4;
+  static const int eventDeletion = 5;
+  static const int reaction = 7;
+  static const int channelCreation = 40;
+  static const int channelMetadata = 41;
+  static const int channelMessage = 42;
+  static const int channelHideMessage = 43;
+  static const int channelMuteUser = 44;
   // 45    - 49	    Public Chat Reserved
   // 10000 - 19999  Replaceable Events Reserved
   // 20000 - 29999	Ephemeral Events Reserved
-
-  const NostrKind(this.value);
-  final int value;
-
-  static NostrKind fromValue(num value) {
-    switch (value) {
-      case 0:
-        return NostrKind.metadata;
-      case 1:
-        return NostrKind.note;
-      case 2:
-        return NostrKind.recommendRelay;
-      case 3:
-        return NostrKind.contacts;
-      case 4:
-        return NostrKind.encryptedDirectMessages;
-      case 5:
-        return NostrKind.eventDeletion;
-      case 7:
-        return NostrKind.reaction;
-      case 40:
-        return NostrKind.channelCreation;
-      case 41:
-        return NostrKind.channelMetadata;
-      case 42:
-        return NostrKind.channelMessage;
-      case 43:
-        return NostrKind.channelHideMessage;
-      case 44:
-        return NostrKind.channelMuteUser;
-      default:
-        log('Unknown NostrKind: $value');
-        return NostrKind.unknown;
-    }
-  }
-}
-
-extension KindsListExtensions on List<NostrKind> {
-  List<int> toIntList() => [for (final k in this) k.value];
 }

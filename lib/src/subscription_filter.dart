@@ -1,11 +1,9 @@
-import 'models/kinds.dart';
-
 class SubscriptionFilter {
   /// a list of event ids
   final List<String> eventIds;
 
   /// a list of kind numbers
-  final List<NostrKind> eventKinds;
+  final List<int> eventKinds;
 
   /// a list of event ids that are referenced in an "e" tag
   final List<String> eTagIds; // #e
@@ -39,7 +37,7 @@ class SubscriptionFilter {
   Map<String, dynamic> toJson() {
     return {
       if (eventIds.isNotEmpty) 'ids': eventIds,
-      if (eventKinds.isNotEmpty) 'kinds': eventKinds.toIntList(),
+      if (eventKinds.isNotEmpty) 'kinds': eventKinds,
       if (eTagIds.isNotEmpty) '#e': eTagIds,
       if (pTagIds.isNotEmpty) '#p': pTagIds,
       if (since != null)
